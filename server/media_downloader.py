@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,8 @@ class DownloadResult:
     thumbnail: str | None
     source_url: str
     path: Path  # where the final audio file was saved
+    file_size: int  # bytes
+    mime_type: str
 
 
 class MediaDownloader:
@@ -90,6 +93,9 @@ class MediaDownloader:
         if not downloads or "filepath" not in downloads[0]:
             raise DownloadFailedError("yt-dlp did not report an output file")
 
+        path = Path(downloads[0]["filepath"])
+        mime_type, _ = mimetypes.guess_type(path.name)
+
         return DownloadResult(
             id=info["id"],
             title=info.get("title") or info["id"],
@@ -97,7 +103,9 @@ class MediaDownloader:
             duration=info.get("duration"),
             thumbnail=info.get("thumbnail"),
             source_url=url,
-            path=Path(downloads[0]["filepath"]),
+            path=path,
+            file_size=path.stat().st_size,
+            mime_type=mime_type or "application/octet-stream",
         )
 
 
